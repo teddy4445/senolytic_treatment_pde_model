@@ -30,7 +30,7 @@ def main():
 
     # Define system of ODEs
     def system_of_odes(t, Y):
-        C, Cs, D, T, E, W, I, V = y
+        C, Cs, D, T, E, W, I, V = Y
 
         # Define the parameters
         delta = 8.64e-3
@@ -78,6 +78,16 @@ def main():
         beta = 1
         gamma = 1
 
+        # drug consts
+        mu_PC = 0
+        mu_FC_s = 0
+        lambda_PC_s = 0
+        mu_PT = 0
+        mu_FV = 0
+        # TODO: this is true only for the np-drug case
+        F = 0
+        P = 0
+
         # Define lambda_W
         lambda_W = lambda_CW * (W / W_0) if W <= W_0 else lambda_CW
 
@@ -93,16 +103,24 @@ def main():
             lambda_V = 0.3
 
             # Define the PDEs
-            dC_dt = - delta * np.dot(u, C) + lambda_W * C * (1 - C / C_0) - mu_TC * T * C - mu_PC * C * P - d_C * C
-            dCs_dt = - delta * np.dot(u, Cs) + lambda_CCs * C - mu_FC_s * Cs * F + lambda_PC_s * C * P - d_Cs * Cs
-            dD_dt = - delta * np.dot(u, D) + lambda_D * D_0 * C / (K_C + C) - d_D * D
-            dT_dt = - delta * np.dot(u, T) + lambda_T * T_0 * I / (K_I + I) - mu_PT * T * P - d_T * T
-            dE_dt = - delta * np.dot(u, E) + lambda_E * E * (1 - E / E_0) - np.dot(chi * E,
-                                                                                   np.dot(grad(V), grad(V))) - d_E * E
-            dW_dt = - delta_W * np.dot(grad(W), grad(W)) + lambda_WE * E - d_W * W
-            dI_dt = - delta_I * np.dot(grad(I), grad(I)) + lambda_ID * D - d_TI * I * T / (K_T + T) - d_I * I
-            dV_dt = - delta_V * np.dot(grad(V), grad(
-                V)) + lambda_V * C + lambda_s * lambda_V * Cs - mu_FV * V * F - d_EV * V * E / (K_E + E) - d_V*V
+            if C.size > 5:
+                dC_dt = - delta * np.sum(np.gradient(np.gradient(C))) + lambda_W * C * (1 - C / C_0) - mu_TC * T * C - mu_PC * C * P - d_C * C
+                dCs_dt = - delta * np.sum(np.gradient(np.gradient(Cs))) + lambda_CCs * C - mu_FC_s * Cs * F + lambda_PC_s * C * P - d_Cs * Cs
+                dD_dt = - delta * np.sum(np.gradient(np.gradient(D))) + lambda_D * D_0 * C / (K_C + C) - d_D * D
+                dT_dt = - delta * np.sum(np.gradient(np.gradient(T))) + lambda_T * T_0 * I / (K_I + I) - mu_PT * T * P - d_T * T
+                dE_dt = - delta * np.sum(np.gradient(np.gradient(E))) + lambda_E * E * (1 - E / E_0) - np.dot(chi * E, np.dot(np.gradient(V), np.gradient(V))) - d_E * E
+                dW_dt = - delta_W * np.sum(np.gradient(np.gradient(W))) + lambda_WE * E - d_W * W
+                dI_dt = - delta_I * np.sum(np.gradient(np.gradient(I))) + lambda_ID * D - d_TI * I * T / (K_T + T) - d_I * I
+                dV_dt = - delta_V * np.sum(np.gradient(np.gradient(V))) + lambda_V * C + lambda_s * lambda_V * Cs - mu_FV * V * F - d_EV * V * E / (K_E + E) - d_V*V
+            else:
+                dC_dt =  lambda_W * C * (1 - C / C_0) - mu_TC * T * C - mu_PC * C * P - d_C * C
+                dCs_dt = lambda_CCs * C - mu_FC_s * Cs * F + lambda_PC_s * C * P - d_Cs * Cs
+                dD_dt = lambda_D * D_0 * C / (K_C + C) - d_D * D
+                dT_dt =  lambda_T * T_0 * I / (K_I + I) - mu_PT * T * P - d_T * T
+                dE_dt =  lambda_E * E * (1 - E / E_0) - np.dot(chi * E, np.dot(np.gradient(V), np.gradient(V))) - d_E * E
+                dW_dt =  lambda_WE * E - d_W * W
+                dI_dt =  lambda_ID * D - d_TI * I * T / (K_T + T) - d_I * I
+                dV_dt = lambda_V * C + lambda_s * lambda_V * Cs - mu_FV * V * F - d_EV * V * E / (K_E + E) - d_V*V
 
             return [dC_dt, dCs_dt, dD_dt, dT_dt, dE_dt, dW_dt, dI_dt, dV_dt]
 
